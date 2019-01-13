@@ -60,14 +60,14 @@ class helper
 		$thumbs = array();
 		$pattern = array('.jpg', '.jpg' , '.jpg');
 		$replacement = array('/source', '/mini' , '/medium');
-		if($images_step)
+		if ($images_step)
 		{
 			$this->config['last_images_attachment_count'] = $images_step;
 		}
 		$chars = '[img:';
 		$sql_where = $sql_where_forbidden = $sql_where_topic = $sql_forum = '';
 
-		if($forum_id)
+		if ($forum_id)
 		{
 			$sql_forum = ' AND p.forum_id = ' . $forum_id;
 		}
@@ -88,15 +88,16 @@ class helper
 			}
 		}
 
-		if(sizeof($forumz_ary))
+		if (sizeof($forumz_ary))
 		{
 			$sql_where_forbidden = ' AND ' . $this->db->sql_in_set('p.forum_id', $forumz_ary, true) . '';
 		}
 
-		if($this->config['last_images_attachment_ignore_topic'])
+		if ($this->config['last_images_attachment_ignore_topic'])
 		{
 			$sql_where_topic = ' AND t.topic_id NOT IN ('. $this->config['last_images_attachment_ignore_topic'] .') ';
 		}
+
 		$sql = 'SELECT p.post_id, p.topic_id, p.forum_id, p.post_text, p.post_subject, p.post_time, t.topic_id, t.topic_title
 			FROM ' . POSTS_TABLE . ' p
 			LEFT JOIN ' . TOPICS_TABLE . ' t ON t.topic_id = p.topic_id
@@ -110,18 +111,18 @@ class helper
 			ORDER BY p.post_time DESC';
 		$result = $this->db->sql_query_limit($sql, $this->config['last_images_attachment_count']);
 		$att_count = $create_count = 0;
-		while($attach = $this->db->sql_fetchrow($result))
+		while ($attach = $this->db->sql_fetchrow($result))
 		{
 			$is_quoted = false;
 			$attach['post_text'] = str_replace("\n", '', $attach['post_text']);
-			if(preg_match_all('#\[quote(.*?)\](.*?)\[\/quote:(.*?)\]#iU', $attach['post_text'], $matches))
+			if (preg_match_all('#\[quote(.*?)\](.*?)\[\/quote:(.*?)\]#iU', $attach['post_text'], $matches))
 			{
 				preg_match_all('#\[img:(.*?)\](.*?)\[\/img:(.*?)#i', $matches[1][0], $match);
 				$is_quoted = (!empty($match[0])) ? true : false;
 			}
-			if(!$is_quoted)
+			if (!$is_quoted)
 			{
-				if($this->config['last_images_gallery'])
+				if ($this->config['last_images_gallery'])
 				{
 					preg_match_all('#\[img:(.*?)\](.*?)\[\/img:(.*?)\]#i', $attach['post_text'], $current_posted_img);
 				}
@@ -135,7 +136,7 @@ class helper
 					$current_file_img	= str_replace('https', 'http', $current_file_img);
 					$str = $last_x_img_ppp = preg_replace(array('#&\#46;#', '#&\#58;#', '/\[(.*?)\]/'), array('.',':',''), $current_file_img);
 					$url = parse_url($last_x_img_ppp);
-					if(isset($url['port']))
+					if (isset($url['port']))
 					{
 						$str = $last_x_img_ppp = str_replace(':' . $url['port'], '', $last_x_img_ppp);
 					}
@@ -169,7 +170,7 @@ class helper
 							$res = false;
 						}
 					}
-					if($res)
+					if ($res)
 					{
 						$this->template->assign_block_vars('attach_img', array(
 							'ATTACH_POST'	=> append_sid("{$this->phpbb_root_path}viewtopic.$this->php_ext", 'p=' . $attach['post_id']) . '#p' . $attach['post_id'],
@@ -196,6 +197,7 @@ class helper
 			'IMAGES_ATTACHT_COUNT'	=> $att_count,
 			)
 		);
+
 		if ($att_count >= $this->config['last_images_attachment_count_min'])
 		{
 			$this->template->assign_var('LAST_IMAGES_ATACHMENT', $this->config['last_images_attachment']);
@@ -298,8 +300,7 @@ class helper
 	}
 
 	public function img_resize($file, $resize, $thumbnail_file, $copy = false)
-	{	/* resize images and width = height functions
-		phpBB 2.0.23 album thumbnail mod 2008 Anvar, apwa.ru */
+	{
 		$size = @getimagesize($file);
 		if (!count($size) || !isset($size[0]) || !isset($size[1]))
 		{
@@ -307,41 +308,23 @@ class helper
 		}
 		$image_type = $size[2];
 
-// If image size smaller then minimus thumbs size make copy of image -->
-		if ($resize >= $size[0] || $resize >= $size[1])
+		if ($resize > $size[0] || $resize > $size[1])
 		{
-			switch ($image_type)
-			{
-				case IMAGETYPE_JPEG:
-					$ext = 'jpg';
-				break;
-				case IMAGETYPE_GIF:
-					$ext = 'gif';
-				break;
-				case IMAGETYPE_PNG:
-					$ext = 'png';
-				break;
-				default:
-					return;
-			}
-			copy($file, $thumbnail_file);
 			return;
 		}
-//<--
-		if ($image_type == IMAGETYPE_JPEG)
+
+		switch ($image_type)
 		{
-			$image = imagecreatefromjpeg($file);
-		}
-		else if ($image_type == IMAGETYPE_GIF)
-		{
-			$image = imagecreatefromgif($file);
-		}
-		else if ($image_type == IMAGETYPE_PNG)
-		{
-			$image = imagecreatefrompng($file);
-		}
-		else
-		{
+			case IMAGETYPE_JPEG:
+				$image = imagecreatefromjpeg($file);
+			break;
+			case IMAGETYPE_GIF:
+				$image = imagecreatefromgif($file);
+			break;
+			case IMAGETYPE_PNG:
+				$image = imagecreatefrompng($file);
+			break;
+			default:
 			return;
 		}
 
@@ -367,10 +350,11 @@ class helper
 		$thumbnail2 = imagecreatetruecolor($thumbnail_width, $thumbnail_height);
 		imagecopyresampled($thumbnail2, $image, 0, 0, 0, 0, $thumbnail_width, $thumbnail_height, $width, $height);
 
-		if (!empty($this->config['images_height_width']) || ($thumbnail_height > $thumbnail_width))
+		if ($this->config['images_height_width'] || $thumbnail_height > $thumbnail_width)
 		{
 			$thumbnail = imagecreatetruecolor($thumb_width, $thumb_height);
 			imagecopy($thumbnail, $thumbnail2, 0, 0, $new_left, $new_top, $thumb_width, $thumb_height);
+			imagedestroy($thumbnail2);
 		}
 		else
 		{
@@ -383,19 +367,18 @@ class helper
 			imageString($thumbnail, 1, ($thumb_width/2)-(strlen($copy)*3-5), $thumb_height-10, $copy, $color);
 		}
 
-		if($image_type == IMAGETYPE_JPEG)
+		switch ($image_type)
 		{
-			imagejpeg($thumbnail, $thumbnail_file, 90);
+			case IMAGETYPE_JPEG:
+				imagejpeg($thumbnail, $thumbnail_file, 90);
+			break;
+			case IMAGETYPE_GIF:
+				imagegif($thumbnail, $thumbnail_file);
+			break;
+			case IMAGETYPE_PNG:
+				imagepng($thumbnail, $thumbnail_file, 0);
+			break;
 		}
-		else if($image_type == IMAGETYPE_GIF)
-		{
-			imagegif($thumbnail, $thumbnail_file);
-		}
-		else if ($image_type == IMAGETYPE_PNG)
-		{
-			imagepng($thumbnail, $thumbnail_file, 0);
-		}
-
 		imagedestroy($thumbnail);
 	}
 
@@ -429,16 +412,16 @@ class helper
 			AND post_visibility = 1
 			ORDER BY post_time DESC';
 		$result = $this->db->sql_query_limit($sql, (2 * $this->config['last_images_attachment_count']));
-		while($attach = $this->db->sql_fetchrow($result))
+		while ($attach = $this->db->sql_fetchrow($result))
 		{
 			$is_quoted = false;
 			$attach['post_text'] = str_replace("\n", '', $attach['post_text']);
-			if(preg_match_all('#\[quote(.*?)\](.*?)\[\/quote:(.*?)\]#iU', $attach['post_text'], $matches))
+			if (preg_match_all('#\[quote(.*?)\](.*?)\[\/quote:(.*?)\]#iU', $attach['post_text'], $matches))
 			{
 				preg_match_all('#\[img:(.*?)\](.*?)\[\/img:(.*?)#i', $matches[1][0], $match);
 				$is_quoted = (!empty($match[0])) ? true : false;
 			}
-			if(!$is_quoted)
+			if (!$is_quoted)
 			{
 				preg_match_all('#\[img:(.*?)\](.*?)\[\/img:(.*?)\]#i', $attach['post_text'], $current_posted_img);
 				foreach ($current_posted_img[2] as $current_file_img)
@@ -461,7 +444,7 @@ class helper
 		array_map('trim', $current_posted); // Rest images
 
 		$handle = @opendir($this->phpbb_root_path . $this->config['images_new_path']);
-		if(!$handle)
+		if (!$handle)
 		{
 			return false;
 		}
@@ -483,12 +466,12 @@ class helper
 		$attacments = array(); // ver 1.0.5
 
 		$sql = 'SELECT a.attach_id, a.post_msg_id, a.extension, p.post_id, p.topic_id, p.post_time, p.post_visibility
-			FROM ' . ATTACHMENTS_TABLE . ' a, ' . POSTS_TABLE . ' p, ' . TOPICS_TABLE . ' t
+			FROM ' . ATTACHMENTS_TABLE . ' a, ' . POSTS_TABLE . ' p
 			WHERE a.post_msg_id = p.post_id
 			AND (mimetype = "image/jpeg" OR mimetype = "image/png" OR mimetype = "image/gif")
 			AND p.post_visibility = 1
-			GROUP BY a.post_msg_id DESC LIMIT ' . $this->config['last_images_attachment_count'] .' ';
-		$result = $this->db->sql_query($sql);
+			GROUP BY a.post_msg_id DESC';
+		$result = $this->db->sql_query_limit($sql, $this->config['last_images_attachment_count']);
 		while($attach = $this->db->sql_fetchrow($result))
 		{
 			$thumbnail_file = $this->config['images_new_path'] . 'attach-' . $attach['attach_id'] . '.' . $attach['extension'];
@@ -501,7 +484,7 @@ class helper
 		$images_ary = array_diff($files, $current_posted);
 		$deleted_images = array_diff($images_ary, $attacments);
 
-		if(!empty($files) && sizeof($current_posted) >= $this->config['last_images_attachment_count'])
+		if (!empty($files) && sizeof($current_posted) >= $this->config['last_images_attachment_count'])
 		{
 			foreach ($deleted_images as $del_file)
 			{
@@ -511,7 +494,7 @@ class helper
 
 		// Delete old attachments
 		$deleted_attacments = array_diff(array_diff($files, $attacments), $current_posted);
-		if(!empty($files) && sizeof($attacments) >= $this->config['last_images_attachment_count'])
+		if (!empty($files) && sizeof($attacments) >= $this->config['last_images_attachment_count'])
 		{
 			foreach($deleted_attacments as $del_file)
 			{
@@ -519,7 +502,7 @@ class helper
 			}
 		}
 
-		if(empty($deleted_images) && empty($deleted_attacments))
+		if (empty($deleted_images) && empty($deleted_attacments))
 		{
 			return 'NO_IMAGES_TO DELETE';
 		}

@@ -45,11 +45,12 @@ class listener implements EventSubscriberInterface
 	{
 		if ($this->config['last_images_attachment'] == 1 || $this->config['last_images_attachment'] == 3)
 		{
-			if($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2)
+			if ($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2)
 			{
 				$this->helper->last_images_attachment();
 			}
-			if($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)
+
+			if ($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)
 			{
 				$this->helper->last_images();
 			}
@@ -58,7 +59,7 @@ class listener implements EventSubscriberInterface
 
 	public function last_forum_images($event)
 	{
-		if($this->config['last_images_attachment'])
+		if ($this->config['last_images_attachment'] == 2 || $this->config['last_images_attachment'] == 3)
 		{
 			$forum_id = 0;
 			$forum_data = $event['forum_data'];
@@ -67,11 +68,12 @@ class listener implements EventSubscriberInterface
 				$forum_id = isset($forum_data['forum_id']) ? $forum_data['forum_id'] : 0;
 			}
 
-			if (($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2) && ($this->config['last_images_attachment'] == 2 || $this->config['last_images_attachment'] == 3))
+			if ($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2)
 			{
 				$this->helper->last_images_attachment($forum_id);
 			}
-			if($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)
+
+			if ($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)
 			{
 				$forum_id = isset($forum_data['forum_id']) ? $forum_data['forum_id'] : 0;
 				$this->helper->last_images($forum_id);
@@ -81,7 +83,7 @@ class listener implements EventSubscriberInterface
 
 	public function first_images_thumb_generate($event)
 	{
-		if (!empty($this->config['first_images_from_topic']) && $this->config['last_images_attachment'])
+		if ($this->config['first_images_from_topic'])
 		{
 			$rowset = $event['rowset'];
 			$ar = array();
@@ -92,24 +94,27 @@ class listener implements EventSubscriberInterface
 				{
 					$topic_ids = array();
 				}
-				if($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)
+
+				if ($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)
 				{
 					$topic_ids[] = $topic_id;
 				}
-				if($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2)
+
+				if ($row['topic_attachment'] && ($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2))
 				{
-					($row['topic_attachment']) ? $topic_ids[] = $topic_id : '';
+					$topic_ids[] = $topic_id;
 				}
 				$forum_id = (!empty($row['forum_id'])) ? $row['forum_id'] : '';
 				unset($rowset[$topic_id]);
 			}
-			if(isset($topic_ids))
+
+			if (isset($topic_ids))
 			{
 				$topic_ids = array_unique($topic_ids);
 			}
 
 			// Create thumbs from [img][/img] (c) Sheer
-			if($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)	// Image [img][/img] from first topis's post or all
+			if ($this->config['images_attachment'] == 0 || $this->config['images_attachment'] == 2)	// Image [img][/img] from first topis's post or all
 			{
 				$chars = '[img:';
 				$pattern = array('.jpg', '.jpg' , '.jpg');
@@ -120,12 +125,12 @@ class listener implements EventSubscriberInterface
 					$sql_were = ' AND p.forum_id NOT IN ('. $this->config['first_images_forum_ignore'] .') ';
 				}
 
-				if($this->config['last_images_attachment_ignore_topic'])
+				if ($this->config['last_images_attachment_ignore_topic'])
 				{
 					$sql_were_topic = ' AND t.topic_id NOT IN ('. $this->config['last_images_attachment_ignore_topic'] .') ';
 				}
 
-				if(isset($topic_ids))
+				if (isset($topic_ids))
 				{
 					foreach($topic_ids as $tid)
 					{
@@ -139,16 +144,17 @@ class listener implements EventSubscriberInterface
 							' . $sql_were_topic . '
 							ORDER BY p.post_id ASC';
 						$result = $this->db->sql_query_limit($sql, 1);
-						while($attach = $this->db->sql_fetchrow($result))
+						while ($attach = $this->db->sql_fetchrow($result))
 						{
 							$is_quoted = $thumbnail_file = false;
 							$attach['post_text'] = str_replace("\n", '', $attach['post_text']);
-							if(preg_match_all('#\[quote(.*?)\](.*?)\[\/quote:(.*?)\]#iU', $attach['post_text'], $matches))
+							if (preg_match_all('#\[quote(.*?)\](.*?)\[\/quote:(.*?)\]#iU', $attach['post_text'], $matches))
 							{
 								preg_match_all('#\[img:(.*?)\](.*?)\[\/img:(.*?)#i', $matches[1][0], $match);
 								$is_quoted = (!empty($match[0])) ? true : false;
 							}
-							if(!$is_quoted)
+
+							if (!$is_quoted)
 							{
 								if($this->config['last_images_gallery'])
 								{
@@ -161,7 +167,7 @@ class listener implements EventSubscriberInterface
 
 								$str = $last_x_img_ppp = preg_replace(array('#&\#46;#', '#&\#58;#', '/\[(.*?)\]/'), array('.',':',''), $current_posted_img[2]);
 								$url = parse_url($last_x_img_ppp);
-								if(isset($url['port']))
+								if (isset($url['port']))
 								{
 									$str = $last_x_img_ppp = str_replace(':' . $url['port'], '', $last_x_img_ppp);
 								}
@@ -177,7 +183,8 @@ class listener implements EventSubscriberInterface
 							}
 						}
 						$this->db->sql_freeresult($result);
-						if($thumbnail_file)
+
+						if ($thumbnail_file)
 						{
 							if (!file_exists($thumbnail_file))
 							{
@@ -192,13 +199,15 @@ class listener implements EventSubscriberInterface
 									$this->helper->img_resize($last_x_img_ppp, $this->config['last_images_attachment_size'], $this->phpbb_root_path . $thumbnail_file, $this->config['images_copy_bottom']);
 								}
 							}
+
 							if (file_exists($this->phpbb_root_path . $thumbnail_file))
 							{
 								$this->thumb_file[$row['topic_id']] = $thumbnail_file;
 								$this->template->assign_vars(array(
 									'FIRST_IMAGES_FLOAT' => $this->config['first_images_float'],
-									'FIRST_IMAGES_TOPIC' => $this->config['first_images_size'])
-								);
+									'FIRST_IMAGES_TOPIC' => $this->config['first_images_size'],
+								));
+
 								if($thumbnail_file)
 								{
 									$ar[$tid] = $thumbnail_file;
@@ -211,21 +220,22 @@ class listener implements EventSubscriberInterface
 					$this->tds = $ar;
 				}
 			}
-			if($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2)	// Attachment from first topis's post or all
+
+			if ($this->config['images_attachment'] == 1 || $this->config['images_attachment'] == 2)	// Attachment from first topis's post or all
 			{
 				if (!$this->helper->exclude_forum($forum_id, $this->config['first_images_forum_ignore']) && count($topic_ids))
 				{
 					$this->template->assign_vars(array(
 						'FIRST_IMAGES_FLOAT' => $this->config['first_images_float'],
-						'FIRST_IMAGES_TOPIC' => $this->config['first_images_size']
-						)
-					);
+						'FIRST_IMAGES_TOPIC' => $this->config['first_images_size'],
+					));
 
 					$sql = 'SELECT physical_filename, extension, topic_id
 						FROM ' . ATTACHMENTS_TABLE . '
 						WHERE (mimetype = "image/jpeg" OR mimetype = "image/png" OR mimetype = "image/gif")
 							AND ' . $this->db->sql_in_set('topic_id', $topic_ids) . '
-						GROUP BY post_msg_id ASC';
+						GROUP BY topic_id
+						ORDER BY post_msg_id ASC';
 					$result = $this->db->sql_query($sql);
 
 					while($attach = $this->db->sql_fetchrow($result))
@@ -238,7 +248,6 @@ class listener implements EventSubscriberInterface
 						}
 						if (file_exists($this->phpbb_root_path . $thumbnail_file))
 						{
-							$this->thumb_file[$attach['topic_id']] = $thumbnail_file;
 							$ar[$attach['topic_id']] = $thumbnail_file;
 						}
 					}
